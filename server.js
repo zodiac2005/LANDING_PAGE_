@@ -52,6 +52,16 @@ function validateContactPayload(body) {
   return { errors, data: { full_name, email, message } };
 }
 
+const path = require('path');
+
+// تخديم ملفات الـ CSS والـ JS الثابتة
+app.use(express.static(path.join(__dirname)));
+
+// إرجاع صفحة index.html عند فتح الرابط الرئيسي
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
 // ── POST /api/contact ──
 // Validates and safely inserts a contact form submission.
 app.post('/api/contact', async (req, res) => {
