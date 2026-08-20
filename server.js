@@ -13,12 +13,14 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // ── Database connection pool ──
+// ── Database connection pool ──
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'it_company_db',
   port: process.env.DB_PORT || 3306,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
