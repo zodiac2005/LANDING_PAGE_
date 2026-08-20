@@ -15,6 +15,7 @@ app.use(express.json());
 // ── Database connection pool ──
 // ── Database connection pool ──
 // ── Database connection pool ──
+-// ── Database connection pool ──
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -27,7 +28,9 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 5,
   queueLimit: 0,
-  connectTimeout: 10000
+  connectTimeout: 20000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000
 });
 
 // ── Helpers ──
@@ -66,6 +69,7 @@ app.get('/', (req, res) => {
 });
 
 // ── POST /api/contact ──
+// ── POST /api/contact ──
 app.post('/api/contact', async (req, res) => {
   const { errors, data } = validateContactPayload(req.body || {});
 
@@ -84,8 +88,11 @@ app.post('/api/contact', async (req, res) => {
       id: result.insertId
     });
   } catch (err) {
-    console.error('Error inserting contact message:', err);
-    return res.status(500).json({ message: 'حدث خطأ في الخادم. حاول مرة أخرى لاحقاً.' });
+    console.error('Database Insertion Error Details:', err);
+    return res.status(500).json({ 
+      message: 'حدث خطأ في الخادم أثناء حفظ الرسالة.',
+      error_code: err.code || 'UNKNOWN'
+    });
   }
 });
 
