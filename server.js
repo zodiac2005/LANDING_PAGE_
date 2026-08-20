@@ -14,15 +14,16 @@ app.use(express.json());
 
 // ── Database Connection Pool ──
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'it_company_db',
+  host: process.env.DB_HOST || 'bql9ilbnhwhaixwxjn8s-mysql.services.clever-cloud.com',
+  user: process.env.DB_USER || 'uolocydbfvn3m7h3',
+  password: process.env.DB_PASSWORD || '9XLldpX19aswvWTccYp3',
+  database: process.env.DB_NAME || 'bql9ilbnhwhaixwxjn8s',
   port: Number(process.env.DB_PORT) || 3306,
-  ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false,
+  ssl: { rejectUnauthorized: false },
   waitForConnections: true,
-  connectionLimit: 5,
-  queueLimit: 0
+  connectionLimit: 1, // حصر الاتصالات بـ 1 لبيئة Serverless
+  queueLimit: 0,
+  connectTimeout: 10000
 });
 
 // ── Helpers ──
@@ -70,7 +71,11 @@ app.post('/api/contact', async (req, res) => {
     });
   } catch (err) {
     console.error('Database Error:', err);
-    return res.status(500).json({ message: 'حدث خطأ أثناء حفظ الرسالة في قاعدة البيانات.' });
+    // إرجاع تفاصيل الخطأ للتعرف عليه
+    return res.status(500).json({ 
+      message: err.message, 
+      code: err.code 
+    });
   }
 });
 
