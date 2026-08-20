@@ -11,7 +11,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname))); // serves index.html, style.css, script.js
 
 // ── Database connection pool ──
 const pool = mysql.createPool({
@@ -19,6 +18,7 @@ const pool = mysql.createPool({
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'it_company_db',
+  port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -52,18 +52,14 @@ function validateContactPayload(body) {
   return { errors, data: { full_name, email, message } };
 }
 
-const path = require('path');
-
-// تخديم ملفات الـ CSS والـ JS الثابتة
+// ── Static Files & Routes ──
 app.use(express.static(path.join(__dirname)));
 
-// إرجاع صفحة index.html عند فتح الرابط الرئيسي
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // ── POST /api/contact ──
-// Validates and safely inserts a contact form submission.
 app.post('/api/contact', async (req, res) => {
   const { errors, data } = validateContactPayload(req.body || {});
 
@@ -88,7 +84,6 @@ app.post('/api/contact', async (req, res) => {
 });
 
 // ── GET /api/services ──
-// Returns the IT services stored in the database, ordered for display.
 app.get('/api/services', async (req, res) => {
   try {
     const [rows] = await pool.execute(
@@ -104,6 +99,11 @@ app.get('/api/services', async (req, res) => {
 // ── Health check ──
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-app.listen(PORT, () => {
-  console.log(`NOVA IT server running on http://localhost:${PORT}`);
-});
+// Export for Vercel Serverless
+module.exports = app;
+
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`NOVA IT server running on http://localhost:${PORT}`);
+  });
+}
