@@ -1,6 +1,6 @@
 // =========================================================
 // NOVA IT Company — Backend API
-// Express + mysql2 (parameterized queries throughout)
+// Express + mysql2 (parameterized queries)
 // =========================================================
 
 const express = require('express');
@@ -12,25 +12,17 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// ── Database connection pool ──
-// ── Database connection pool ──
-// ── Database connection pool ──
--// ── Database connection pool ──
+// ── Database Connection Pool ──
 const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'it_company_db',
   port: Number(process.env.DB_PORT) || 3306,
-  ssl: {
-    rejectUnauthorized: false
-  },
+  ssl: process.env.DB_HOST ? { rejectUnauthorized: false } : false,
   waitForConnections: true,
   connectionLimit: 5,
-  queueLimit: 0,
-  connectTimeout: 20000,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000
+  queueLimit: 0
 });
 
 // ── Helpers ──
@@ -42,33 +34,22 @@ function validateContactPayload(body) {
   const email = typeof body.email === 'string' ? body.email.trim() : '';
   const message = typeof body.message === 'string' ? body.message.trim() : '';
 
-  if (!full_name || full_name.length < 2) {
-    errors.push('الاسم الكامل مطلوب.');
-  }
-  if (full_name.length > 150) {
-    errors.push('الاسم الكامل طويل جداً.');
-  }
-  if (!email || !EMAIL_REGEX.test(email)) {
-    errors.push('البريد الإلكتروني غير صالح.');
-  }
-  if (email.length > 255) {
-    errors.push('البريد الإلكتروني طويل جداً.');
-  }
-  if (!message || message.length < 5) {
-    errors.push('نص الرسالة قصير جداً.');
-  }
+  if (!full_name || full_name.length < 2) errors.push('الاسم الكامل مطلوب.');
+  if (full_name.length > 150) errors.push('الاسم الكامل طويل جداً.');
+  if (!email || !EMAIL_REGEX.test(email)) errors.push('البريد الإلكتروني غير صالح.');
+  if (email.length > 255) errors.push('البريد الإلكتروني طويل جداً.');
+  if (!message || message.length < 5) errors.push('نص الرسالة قصير جداً.');
 
   return { errors, data: { full_name, email, message } };
 }
 
-// ── Static Files & Routes ──
+// ── Static Files & Main Route ──
 app.use(express.static(path.join(__dirname)));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ── POST /api/contact ──
 // ── POST /api/contact ──
 app.post('/api/contact', async (req, res) => {
   const { errors, data } = validateContactPayload(req.body || {});
@@ -88,11 +69,8 @@ app.post('/api/contact', async (req, res) => {
       id: result.insertId
     });
   } catch (err) {
-    console.error('Database Insertion Error Details:', err);
-    return res.status(500).json({ 
-      message: 'حدث خطأ في الخادم أثناء حفظ الرسالة.',
-      error_code: err.code || 'UNKNOWN'
-    });
+    console.error('Database Error:', err);
+    return res.status(500).json({ message: 'حدث خطأ أثناء حفظ الرسالة في قاعدة البيانات.' });
   }
 });
 
@@ -104,19 +82,19 @@ app.get('/api/services', async (req, res) => {
     );
     return res.json(rows);
   } catch (err) {
-    console.error('Error fetching services:', err);
+    console.error('Database Error:', err);
     return res.status(500).json({ message: 'تعذر تحميل الخدمات.' });
   }
 });
 
-// ── Health check ──
+// ── Health Check ──
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Export for Vercel Serverless
+// Export app for Vercel
 module.exports = app;
 
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
-    console.log(`NOVA IT server running on http://localhost:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
   });
 }
